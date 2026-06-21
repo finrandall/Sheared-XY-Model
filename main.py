@@ -58,13 +58,7 @@ def plot_torque(γ̇List, gamma_smooth, kTList, MeanTorqueArray, μ, analytic_xm
         if show_analytic:
             analytic_vals = np.array([analytic_torque(g, kTList[j], μ, xmax=analytic_xmax) for g in gamma_smooth])
 
-            ax.plot(
-                gamma_smooth,
-                analytic_vals,
-                "-",
-                linewidth=1,
-                alpha=0.7,
-                color=torque_colours[j])
+            ax.plot(gamma_smooth, analytic_vals, "-", linewidth=1, alpha=0.7, color=torque_colours[j])
 
     ax.set_xlabel(r"$\dot{\gamma}$")
     ax.set_ylabel(r"$\bar{\tau}$")
@@ -82,14 +76,7 @@ def plot_potential(γ̇List, kTList, MeanPotentialArray, save_figures, show_figu
     markers = ["o", "s", "^", "D", "v", "*", "P", "X"]
 
     for j in range(kTList.shape[0]):
-        ax.plot(
-            γ̇List,
-            MeanPotentialArray[j],
-            linestyle="None",
-            marker=markers[j % len(markers)],
-            markersize=3,
-            color=potential_colours[j],
-            label=fr"$kT={kTList[j]}$")
+        ax.plot(γ̇List, MeanPotentialArray[j], linestyle="None", marker=markers[j % len(markers)], markersize=3, color=potential_colours[j], label=fr"$kT={kTList[j]}$")
 
     ax.set_xlabel(r"$\dot{\gamma}$")
     ax.set_ylabel(r"$\langle U \rangle$")
