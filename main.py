@@ -41,7 +41,7 @@ def run_sweep(params):
     μ = params["μ"]
     N = params["N"]
     EndTime = params["EndTime"]
-    TimeAverage = params["TimeAverage"]
+    BurnInTime = params.get("BurnInTime", 0.0)
     Δt = params["Δt"]
     γ̇List = params["γ̇List"]
     kTList = params["kTList"]
@@ -54,7 +54,7 @@ def run_sweep(params):
         local_potential = np.zeros(γ̇List.shape[0])
 
         for i in range(rank, γ̇List.shape[0], size):
-            local_torque[i], local_potential[i] = evolve(kTList[j], γ̇List[i], μ, N, EndTime, TimeAverage, Δt)
+            local_torque[i], local_potential[i] = evolve(kTList[j], γ̇List[i], μ, N, EndTime, BurnInTime, Δt)
 
         comm.Reduce(local_torque, MeanTorqueArray[j] if rank == 0 else None, op=MPI.SUM, root=0)
         comm.Reduce(local_potential, MeanPotentialArray[j] if rank == 0 else None, op=MPI.SUM, root=0)

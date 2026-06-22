@@ -148,26 +148,26 @@ def get_sweep_parameters(base):
     defaults = {
         "μ": str(base["μ"]),
         "kTList": ", ".join(str(x) for x in base["kTList"]),
-        "γ̇_min": str(np.min(base_γ̇List)),
-        "γ̇_max": str(np.max(base_γ̇List)),
+        "γ̇_min_exp": str(np.log10(np.min(base_γ̇List))),
+        "γ̇_max_exp": str(np.log10(np.max(base_γ̇List))),
         "γ̇_points": str(base_γ̇List.shape[0]),
         "N": str(base["N"]),
         "Δt": str(base["Δt"]),
         "EndTime": str(base["EndTime"]),
-        "TimeAverage": str(base["TimeAverage"]),
+        "BurnInTime": str(base.get("BurnInTime", 0.0)),
         "show_analytic": base["show_analytic"],
     }
 
     labels = {
         "μ": "Damping μ",
         "kTList": "Temperature sweep kT",
-        "γ̇_min": "Minimum shear rate γ̇",
-        "γ̇_max": "Maximum shear rate γ̇",
+        "γ̇_min_exp": r"Minimum log10 shear",
+        "γ̇_max_exp": r"Maximum log10 shear",
         "γ̇_points": "Number of shear points",
         "N": "System size N",
         "Δt": "Time step Δt",
         "EndTime": "End time",
-        "TimeAverage": "Final averaging time",
+        "BurnInTime": "Burn-in time",
         "show_analytic": "Show analytic curve",
     }
 
@@ -189,17 +189,17 @@ def get_sweep_parameters(base):
         row += 1
 
     def submit():
-        γ̇_min = float(entries["γ̇_min"].get())
-        γ̇_max = float(entries["γ̇_max"].get())
+        γ̇_min_exp = float(entries["γ̇_min_exp"].get())
+        γ̇_max_exp = float(entries["γ̇_max_exp"].get())
         γ̇_points = int(entries["γ̇_points"].get())
 
         params["μ"] = float(entries["μ"].get())
         params["kTList"] = parse_float_list(entries["kTList"].get())
-        params["γ̇List"] = np.linspace(γ̇_min, γ̇_max, γ̇_points)
+        params["γ̇List"] = np.logspace(γ̇_min_exp, γ̇_max_exp, γ̇_points)
         params["N"] = int(entries["N"].get())
         params["Δt"] = float(entries["Δt"].get())
         params["EndTime"] = float(entries["EndTime"].get())
-        params["TimeAverage"] = float(entries["TimeAverage"].get())
+        params["BurnInTime"] = float(entries["BurnInTime"].get())
         params["show_analytic"] = display_to_value["show_analytic"][entries["show_analytic"].get()]
 
         root.withdraw()

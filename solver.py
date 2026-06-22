@@ -10,9 +10,14 @@ from observables import compute_potential_energy, compute_local_potential_row, c
 
 
 @njit
-def evolve(kT, γ̇, μ, N, EndTime, TimeAverage, Δt):
-    TimeThreshold = EndTime - TimeAverage
+def evolve(kT, γ̇, μ, N, EndTime, BurnInTime, Δt):
     Iterations = int(EndTime / Δt)
+
+    if BurnInTime < 0.0:
+        BurnInTime = 0.0
+
+    if BurnInTime > EndTime:
+        BurnInTime = EndTime
 
     ν = np.sqrt(2.0 * kT * μ)
     noise_prefactor = ν / np.sqrt(Δt)
@@ -69,17 +74,16 @@ def evolve(kT, γ̇, μ, N, EndTime, TimeAverage, Δt):
         for s in range(N):
             V[s] = V[s] + Δt * NewSpinForces[s]
 
-        if t >= TimeThreshold:
-            tor_sum = 0.0
-
-            for s in range(N):
-                tor_sum += Forces_v[s]
-
-            MeanTorque += tor_sum / N
+        if t >= BurnInTime:
+            MeanTorque += compute_mean_torque(NewForces)
             MeanPotentialEnergy += compute_potential_energy(X, t, ω)
             Count += 1
 
-    return MeanTorque / Count, MeanPotentialEnergy / Count
+    if Count > 0:
+        MeanTorque = MeanTorque / Count
+        MeanPotentialEnergy = MeanPotentialEnergy / Count
+
+    return MeanTorque, MeanPotentialEnergy
 
 
 @njit

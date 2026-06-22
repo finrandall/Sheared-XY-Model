@@ -89,8 +89,8 @@ def plot_torque(γ̇List, kTList, MeanTorqueArray, μ, show_analytic):
 
     torque_colours = plt.cm.Dark2(np.linspace(0, 1, len(kTList)))
     markers = ["o", "s", "^", "D", "v", "*", "P", "X"]
-    gamma_smooth = np.linspace(min(γ̇List), max(γ̇List), 1000)
-    analytic_xmax = max(γ̇List)
+    gamma_smooth = np.logspace(np.log10(min(γ̇List)), np.log10(max(γ̇List)), 1000)
+    analytic_xmax = 200
 
     for j in range(kTList.shape[0]):
         ax.plot(
@@ -105,6 +105,11 @@ def plot_torque(γ̇List, kTList, MeanTorqueArray, μ, show_analytic):
         if show_analytic:
             analytic_vals = np.array([analytic_torque(g, kTList[j], μ, xmax=analytic_xmax) for g in gamma_smooth])
             ax.plot(gamma_smooth, analytic_vals, "-", linewidth=1, alpha=0.7, color=torque_colours[j])
+
+    print("analytic gamma range:", min(gamma_smooth), max(gamma_smooth))
+    print("analytic xmax:", analytic_xmax)
+    print("kT:", kTList[j])
+    print("analytic min/max:", np.min(analytic_vals), np.max(analytic_vals))
 
     ax.set_xlabel(r"$\dot{\gamma}$")
     ax.set_ylabel(r"$\bar{\tau}$")
