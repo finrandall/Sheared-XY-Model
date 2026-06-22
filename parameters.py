@@ -4,14 +4,23 @@ import numpy as np
 def default_parameters():
     params = {}
 
-    params["μ"] = 1.0
-    params["N"] = 2 ** 11
-    params["EndTime"] = 10000.0
-    params["TimeAverage"] = 1000.0
-    params["Δt"] = 0.03
+    params["mode"] = "single"
+
+    params["μ"] = 0.5
+    params["N"] = 2 ** 9
+    params["EndTime"] = 5000.0
+    params["BurnInTime"] = 4500.0
+    params["TimeAverage"] = 100.0
+    params["Δt"] = 0.05
+
+    params["kT"] = 0.001
+    params["γ̇"] = 0.00585938
+    params["sample_interval"] = 1
+    params["potential_window"] = 100.0
 
     params["kTList"] = np.array([0.1, 1.0], dtype=np.float64)
     params["γ̇List"] = np.concatenate((np.logspace(-3, -1, 12), np.logspace(-1, np.log10(3), 24)[1:]))
+
     params["analytic_points"] = 300
     params["analytic_xmax"] = 200.0
     params["show_analytic"] = True

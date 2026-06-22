@@ -17,33 +17,124 @@ def parse_float_list(text):
     return np.array(values, dtype=np.float64)
 
 
-def get_parameters():
-    params = {}
+def get_mode():
+    selected = {"mode": None}
 
     root = tk.Tk()
-    root.title("Marmalade parameters")
+    root.title("Marmalade mode")
+
+    label = ttk.Label(root, text="Simulation mode")
+    label.grid(row=0, column=0, padx=8, pady=8, sticky="w")
+
+    mode_box = ttk.Combobox(
+        root,
+        values=("Single realisation", "Parameter sweep"),
+        width=20,
+        state="readonly")
+    mode_box.set("Single realisation")
+    mode_box.grid(row=0, column=1, padx=8, pady=8)
+
+    def submit():
+        if mode_box.get() == "Single realisation":
+            selected["mode"] = "single"
+        else:
+            selected["mode"] = "sweep"
+
+        root.withdraw()
+        root.update_idletasks()
+        root.destroy()
+
+    button = ttk.Button(root, text="Next", command=submit)
+    button.grid(row=1, column=0, columnspan=2, padx=8, pady=10)
+
+    root.mainloop()
+
+    return selected["mode"]
+
+
+def get_single_parameters(base):
+    params = {"mode": "single"}
+
+    root = tk.Tk()
+    root.title("Single realisation parameters")
 
     entries = {}
+    base_γ̇List = base.get("γ̇List", np.linspace(0.001, 3.0, 30))
 
-    base = default_parameters()
+    defaults = {
+        "μ": str(base["μ"]),
+        "kT": str(base.get("kT", base["kTList"][0])),
+        "γ̇": str(base.get("γ̇", base_γ̇List[0])),
+        "N": str(base["N"]),
+        "Δt": str(base["Δt"]),
+        "EndTime": str(base["EndTime"]),
+        "BurnInTime": str(base.get("BurnInTime", 0.0)),
+        "sample_interval": str(base.get("sample_interval", 1)),
+        "potential_window": str(base.get("potential_window", base["EndTime"])),
+    }
+
+    labels = {
+        "μ": "Damping μ",
+        "kT": "Temperature kT",
+        "γ̇": "Shear rate γ̇",
+        "N": "System size N",
+        "Δt": "Time step Δt",
+        "EndTime": "End time",
+        "BurnInTime": "Burn-in time",
+        "sample_interval": "Sample interval",
+        "potential_window": "Final potential window",
+    }
+
+    row = 0
+
+    for key, value in defaults.items():
+        label = ttk.Label(root, text=labels[key])
+        label.grid(row=row, column=0, padx=8, pady=4, sticky="w")
+
+        entry = ttk.Entry(root, width=20)
+        entry.insert(0, value)
+        entry.grid(row=row, column=1, padx=8, pady=4)
+
+        entries[key] = entry
+        row += 1
+
+    def submit():
+        params["μ"] = float(entries["μ"].get())
+        params["kT"] = float(entries["kT"].get())
+        params["γ̇"] = float(entries["γ̇"].get())
+        params["N"] = int(entries["N"].get())
+        params["Δt"] = float(entries["Δt"].get())
+        params["EndTime"] = float(entries["EndTime"].get())
+        params["BurnInTime"] = float(entries["BurnInTime"].get())
+        params["sample_interval"] = int(entries["sample_interval"].get())
+        params["potential_window"] = float(entries["potential_window"].get())
+
+        root.withdraw()
+        root.update_idletasks()
+        root.destroy()
+
+    button = ttk.Button(root, text="Run simulation", command=submit)
+    button.grid(row=row, column=0, columnspan=2, padx=8, pady=10)
+
+    root.mainloop()
+
+    if len(params) == 1:
+        return None
+
+    return params
+
+
+def get_sweep_parameters(base):
+    params = {"mode": "sweep"}
+
+    root = tk.Tk()
+    root.title("Parameter sweep parameters")
+
+    entries = {}
+    base_γ̇List = base.get("γ̇List", np.linspace(0.001, 3.0, 30))
 
     display_to_value = {
-        "shear_mode": {
-            "Low shear": "low",
-            "Medium shear": "medium",
-            "High shear": "high",
-            "Full range": "full",
-            "Custom": "custom",
-        },
         "show_analytic": {
-            "True": True,
-            "False": False,
-        },
-        "save_figures": {
-            "True": True,
-            "False": False,
-        },
-        "show_figures": {
             "True": True,
             "False": False,
         },
@@ -57,46 +148,32 @@ def get_parameters():
     defaults = {
         "μ": str(base["μ"]),
         "kTList": ", ".join(str(x) for x in base["kTList"]),
+        "γ̇_min": str(np.min(base_γ̇List)),
+        "γ̇_max": str(np.max(base_γ̇List)),
+        "γ̇_points": str(base_γ̇List.shape[0]),
         "N": str(base["N"]),
         "Δt": str(base["Δt"]),
         "EndTime": str(base["EndTime"]),
         "TimeAverage": str(base["TimeAverage"]),
-        "shear_mode": "full",
-        "γ̇_min": "1e-3",
-        "γ̇_mid": "1e-1",
-        "γ̇_max": "3.0",
-        "γ̇_low_points": "12",
-        "γ̇_high_points": "24",
         "show_analytic": base["show_analytic"],
-        "save_figures": base["save_figures"],
-        "show_figures": base["show_figures"],
     }
 
     labels = {
         "μ": "Damping μ",
-        "kTList": "Temperature kT",
+        "kTList": "Temperature sweep kT",
+        "γ̇_min": "Minimum shear rate γ̇",
+        "γ̇_max": "Maximum shear rate γ̇",
+        "γ̇_points": "Number of shear points",
         "N": "System size N",
         "Δt": "Time step Δt",
         "EndTime": "End time",
         "TimeAverage": "Final averaging time",
-        "shear_mode": "Shear range",
-        "γ̇_min": "Minimum shear rate γ̇",
-        "γ̇_mid": "Middle shear rate γ̇",
-        "γ̇_max": "Maximum shear rate γ̇",
-        "γ̇_low_points": "Low-rate points",
-        "γ̇_high_points": "High-rate points",
         "show_analytic": "Show analytic curve",
-        "save_figures": "Save figures",
-        "show_figures": "Show figures",
     }
 
     row = 0
-    hidden_keys = {"γ̇_min", "γ̇_mid", "γ̇_max", "γ̇_low_points", "γ̇_high_points", "show_analytic", "save_figures", "show_figures"}
 
     for key, value in defaults.items():
-        if key in hidden_keys:
-            continue
-
         label = ttk.Label(root, text=labels[key])
         label.grid(row=row, column=0, padx=8, pady=4, sticky="w")
 
@@ -111,117 +188,43 @@ def get_parameters():
         entries[key] = entry
         row += 1
 
-    def open_shear_parameters():
-        window = tk.Toplevel(root)
-        window.title("Shear parameters")
-
-        shear_entries = {}
-        shear_keys = ["γ̇_min", "γ̇_mid", "γ̇_max", "γ̇_low_points", "γ̇_high_points"]
-
-        shear_row = 0
-
-        for key in shear_keys:
-            label = ttk.Label(window, text=labels[key])
-            label.grid(row=shear_row, column=0, padx=8, pady=4, sticky="w")
-
-            entry = ttk.Entry(window, width=20)
-            entry.insert(0, str(defaults[key]))
-            entry.grid(row=shear_row, column=1, padx=8, pady=4)
-
-            shear_entries[key] = entry
-            shear_row += 1
-
-        def save_shear_parameters():
-            for key in shear_keys:
-                defaults[key] = shear_entries[key].get()
-
-            window.destroy()
-
-        button = ttk.Button(window, text="Save", command=save_shear_parameters)
-        button.grid(row=shear_row, column=0, columnspan=2, padx=8, pady=10)
-
-    def open_plot_parameters():
-        window = tk.Toplevel(root)
-        window.title("Plot parameters")
-
-        plot_entries = {}
-        plot_keys = ["show_analytic", "save_figures", "show_figures"]
-
-        plot_row = 0
-
-        for key in plot_keys:
-            label = ttk.Label(window, text=labels[key])
-            label.grid(row=plot_row, column=0, padx=8, pady=4, sticky="w")
-
-            entry = ttk.Combobox(window, values=tuple(display_to_value[key].keys()), width=18, state="readonly")
-            entry.set(value_to_display[key][defaults[key]])
-            entry.grid(row=plot_row, column=1, padx=8, pady=4)
-
-            plot_entries[key] = entry
-            plot_row += 1
-
-        def save_plot_parameters():
-            defaults["show_analytic"] = display_to_value["show_analytic"][plot_entries["show_analytic"].get()]
-            defaults["save_figures"] = display_to_value["save_figures"][plot_entries["save_figures"].get()]
-            defaults["show_figures"] = display_to_value["show_figures"][plot_entries["show_figures"].get()]
-
-            window.destroy()
-
-        button = ttk.Button(window, text="Save", command=save_plot_parameters)
-        button.grid(row=plot_row, column=0, columnspan=2, padx=8, pady=10)
-
-    def make_shear_list(shear_mode):
-        if shear_mode == "low":
-            return np.logspace(-3, -1, 16)
-
-        if shear_mode == "medium":
-            return np.logspace(-2, 0, 20)
-
-        if shear_mode == "high":
-            return np.logspace(-1, np.log10(3.0), 20)
-
-        γ̇_min = float(defaults["γ̇_min"])
-        γ̇_mid = float(defaults["γ̇_mid"])
-        γ̇_max = float(defaults["γ̇_max"])
-        γ̇_low_points = int(defaults["γ̇_low_points"])
-        γ̇_high_points = int(defaults["γ̇_high_points"])
-
-        return np.concatenate((
-            np.logspace(np.log10(γ̇_min), np.log10(γ̇_mid), γ̇_low_points),
-            np.logspace(np.log10(γ̇_mid), np.log10(γ̇_max), γ̇_high_points)[1:]
-        ))
-
     def submit():
-        shear_mode = display_to_value["shear_mode"][entries["shear_mode"].get()]
+        γ̇_min = float(entries["γ̇_min"].get())
+        γ̇_max = float(entries["γ̇_max"].get())
+        γ̇_points = int(entries["γ̇_points"].get())
 
         params["μ"] = float(entries["μ"].get())
         params["kTList"] = parse_float_list(entries["kTList"].get())
+        params["γ̇List"] = np.linspace(γ̇_min, γ̇_max, γ̇_points)
         params["N"] = int(entries["N"].get())
         params["Δt"] = float(entries["Δt"].get())
         params["EndTime"] = float(entries["EndTime"].get())
         params["TimeAverage"] = float(entries["TimeAverage"].get())
-        params["γ̇List"] = make_shear_list(shear_mode)
-        params["analytic_points"] = params["γ̇List"].shape[0] * 5
-        params["analytic_xmax"] = base["analytic_xmax"]
-        params["show_analytic"] = defaults["show_analytic"]
-        params["save_figures"] = defaults["save_figures"]
-        params["show_figures"] = defaults["show_figures"]
+        params["show_analytic"] = display_to_value["show_analytic"][entries["show_analytic"].get()]
 
         root.withdraw()
         root.update_idletasks()
         root.destroy()
-
-    shear_button = ttk.Button(root, text="Shear parameters", command=open_shear_parameters)
-    shear_button.grid(row=row, column=0, columnspan=2, padx=8, pady=4)
-    row += 1
-
-    plot_button = ttk.Button(root, text="Plot parameters", command=open_plot_parameters)
-    plot_button.grid(row=row, column=0, columnspan=2, padx=8, pady=4)
-    row += 1
 
     button = ttk.Button(root, text="Run simulation", command=submit)
     button.grid(row=row, column=0, columnspan=2, padx=8, pady=10)
 
     root.mainloop()
 
+    if len(params) == 1:
+        return None
+
     return params
+
+
+def get_parameters():
+    base = default_parameters()
+    mode = get_mode()
+
+    if mode is None:
+        return None
+
+    if mode == "single":
+        return get_single_parameters(base)
+
+    return get_sweep_parameters(base)

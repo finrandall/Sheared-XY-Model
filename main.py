@@ -1,19 +1,41 @@
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from mpi4py import MPI
 
-from analytics import analytic_torque
-from solver import evolve
+from solver import evolve, evolve_timeseries
 from interface import get_parameters
 from parameters import default_parameters
 
+from plot import plot_single_potential, plot_single_torque, plot_final_velocity, plot_average_velocity, plot_local_potential_history, plot_rotor_autocorrelation, plot_torque, plot_potential
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
+
+
+def run_single(params):
+    kT = params["kT"]
+    γ̇ = params["γ̇"]
+    μ = params["μ"]
+    N = params["N"]
+    EndTime = params["EndTime"]
+    BurnInTime = params.get("BurnInTime", 0.0)
+    Δt = params["Δt"]
+    sample_interval = params.get("sample_interval", 1)
+    potential_window = params.get("potential_window", EndTime)
+
+    return evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval, potential_window)
+
+
+def print_single_averages(MeanPotentialEnergy, MeanTorque, measurement_count):
+    print("Measured observables after burn-in")
+    print("----------------------------------")
+    print(f"Average potential energy: {MeanPotentialEnergy:.12g}")
+    print(f"Average torque:           {MeanTorque:.12g}")
+    print(f"Measurement samples:      {measurement_count}")
+
 
 def run_sweep(params):
     μ = params["μ"]
@@ -39,51 +61,6 @@ def run_sweep(params):
 
     return MeanTorqueArray, MeanPotentialArray
 
-def plot_torque(γ̇List, gamma_smooth, kTList, MeanTorqueArray, μ, analytic_xmax, show_analytic, save_figures, show_figures):
-    fig, ax = plt.subplots()
-
-    torque_colours = plt.cm.Dark2(np.linspace(0, 1, len(kTList)))
-    markers = ["o", "s", "^", "D", "v", "*", "P", "X"]
-
-    for j in range(kTList.shape[0]):
-        ax.plot(
-            γ̇List,
-            MeanTorqueArray[j],
-            linestyle="None",
-            marker=markers[j % len(markers)],
-            markersize=3,
-            color=torque_colours[j],
-            label=fr"Simulation $kT={kTList[j]}$")
-
-        if show_analytic:
-            analytic_vals = np.array([analytic_torque(g, kTList[j], μ, xmax=analytic_xmax) for g in gamma_smooth])
-
-            ax.plot(gamma_smooth, analytic_vals, "-", linewidth=1, alpha=0.7, color=torque_colours[j])
-
-    ax.set_xlabel(r"$\dot{\gamma}$")
-    ax.set_ylabel(r"$\bar{\tau}$")
-    ax.set_xlim(min(γ̇List) - 0.1, max(γ̇List))
-    ax.margins(y=0)
-    ax.legend()
-    fig.tight_layout()
-    plt.show()
-
-
-def plot_potential(γ̇List, kTList, MeanPotentialArray, save_figures, show_figures):
-    fig, ax = plt.subplots()
-
-    potential_colours = plt.cm.OrRd(np.linspace(0.4, 0.9, len(kTList)))
-    markers = ["o", "s", "^", "D", "v", "*", "P", "X"]
-
-    for j in range(kTList.shape[0]):
-        ax.plot(γ̇List, MeanPotentialArray[j], linestyle="None", marker=markers[j % len(markers)], markersize=3, color=potential_colours[j], label=fr"$kT={kTList[j]}$")
-
-    ax.set_xlabel(r"$\dot{\gamma}$")
-    ax.set_ylabel(r"$\langle U \rangle$")
-    ax.legend(loc="lower right")
-    fig.tight_layout()
-    plt.show()
-
 
 def main(use_interface=True):
     if rank == 0:
@@ -96,41 +73,51 @@ def main(use_interface=True):
 
     params = comm.bcast(params, root=0)
 
+    if params is None:
+        return None
+
+    if params.get("mode", "sweep") == "single":
+        if rank == 0:
+            simulation_start = time.time()
+            time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, measurement_count = run_single(params)
+            simulation_elapsed = time.time() - simulation_start
+
+            minutes = int(simulation_elapsed // 60)
+            seconds = simulation_elapsed % 60
+            print(f"Simulation time: {minutes:02}:{seconds:05.2f}")
+            print_single_averages(MeanPotentialEnergy, MeanTorque, measurement_count)
+
+            plot_single_potential(time_series, potential_energy)
+            plot_single_torque(time_series, mean_torque)
+            plot_final_velocity(final_velocity)
+            plot_average_velocity(average_velocity)
+            plot_local_potential_history(local_potential_history)
+            plot_rotor_autocorrelation(rotor_autocorrelation)
+
+            return time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation
+
+        return None
+
+    simulation_start = time.time()
     MeanTorqueArray, MeanPotentialArray = run_sweep(params)
+    simulation_elapsed = time.time() - simulation_start
 
     if rank == 0:
+        minutes = int(simulation_elapsed // 60)
+        seconds = simulation_elapsed % 60
+        print(f"Simulation time: {minutes:02}:{seconds:05.2f}")
+
         γ̇List = params["γ̇List"]
         kTList = params["kTList"]
-        gamma_smooth = np.logspace(np.log10(min(γ̇List)), np.log10(max(γ̇List)), params["analytic_points"])
 
-        plot_torque(
-            γ̇List,
-            gamma_smooth,
-            kTList,
-            MeanTorqueArray,
-            params["μ"],
-            params["analytic_xmax"],
-            params["show_analytic"],
-            params["save_figures"],
-            params["show_figures"])
+        plot_torque(γ̇List, kTList, MeanTorqueArray, params["μ"], params["show_analytic"])
 
-        plot_potential(
-            γ̇List,
-            kTList,
-            MeanPotentialArray,
-            params["save_figures"],
-            params["show_figures"])
+        plot_potential(γ̇List, kTList, MeanPotentialArray)
 
         return γ̇List, kTList, MeanTorqueArray, MeanPotentialArray
 
-    return None, None, None, None
+    return None
+
 
 if __name__ == "__main__":
-    start = time.time()
-    γ̇List, kTList, MeanTorqueArray, MeanPotentialArray = main(use_interface=True)
-    elapsed = time.time() - start
-
-    if rank == 0:
-        minutes = int(elapsed // 60)
-        seconds = elapsed % 60
-        print(f"{minutes:02}:{seconds:05.2f}")
+    results = main(use_interface=True)
