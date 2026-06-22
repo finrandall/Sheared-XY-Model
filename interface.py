@@ -22,7 +22,7 @@ def get_parameters():
     params = {"mode": None}
 
     root = tk.Tk()
-    root.title("Marmalade parameters")
+    root.title("Sheared XY Model Parameters")
 
     entries = {}
 
@@ -229,13 +229,13 @@ def get_parameters():
         else:
             params["mode"] = "sweep"
 
-            γ̇_min_exp = float(entries["γ̇_min_exp"].get())
-            γ̇_max_exp = float(entries["γ̇_max_exp"].get())
+            γ̇_min = float(entries["γ̇_min"].get())
+            γ̇_max = float(entries["γ̇_max"].get())
             γ̇_points = int(entries["γ̇_points"].get())
 
             params["μ"] = float(entries["μ"].get())
             params["kTList"] = parse_float_list(entries["kTList"].get())
-            params["γ̇List"] = np.logspace(γ̇_min_exp, γ̇_max_exp, γ̇_points)
+            params["γ̇List"] = np.logspace(np.log10(γ̇_min), np.log10(γ̇_max), γ̇_points)
             params["N"] = int(entries["N"].get())
             params["Δt"] = float(entries["Δt"].get())
             params["EndTime"] = float(entries["EndTime"].get())

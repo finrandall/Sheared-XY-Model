@@ -6,7 +6,7 @@ def default_parameters():
 
     params["mode"] = "single"
 
-    params["μ"] = 0.5
+    params["μ"] = 1.0
     params["N"] = 2 ** 9
     params["EndTime"] = 5000.0
     params["BurnInTime"] = 4000.0

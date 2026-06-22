@@ -13,5 +13,3 @@ For MPI, run from the terminal in this folder, for example:
 ```bash
 mpiexec -n 4 python main.py
 ```
-
-Only rank 0 opens the parameter window. The selected parameters are broadcast to the other ranks.
