@@ -232,4 +232,4 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
             average_velocity[s] = average_velocity[s] / measurement_count
             rotor_autocorrelation[s] = rotor_autocorrelation[s] / measurement_count
 
-    return time[:sample], potential_energy[:sample], mean_torque[:sample], V, average_velocity, local_potential_history[:potential_sample], rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, measurement_count
+    return time[:sample], potential_energy[:sample], mean_torque[:sample], V, average_velocity, local_potential_history[:potential_sample], rotor_autocorrelation, MeanPotentialEnergy, MeanTorque

@@ -23,18 +23,17 @@ def run_single(params):
     EndTime = params["EndTime"]
     BurnInTime = params.get("BurnInTime", 0.0)
     Δt = params["Δt"]
-    sample_interval = params.get("sample_interval", 1)
+    stride = params.get("stride", 1)
     potential_window = params.get("potential_window", EndTime)
 
-    return evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval, potential_window)
+    return evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, stride, potential_window)
 
 
-def print_single_averages(MeanPotentialEnergy, MeanTorque, measurement_count):
+def print_single_averages(MeanPotentialEnergy, MeanTorque):
     print("Measured observables after burn-in")
     print("----------------------------------")
     print(f"Average potential energy: {MeanPotentialEnergy:.12g}")
     print(f"Average torque:           {MeanTorque:.12g}")
-    print(f"Measurement samples:      {measurement_count}")
 
 
 def run_sweep(params):
@@ -79,13 +78,13 @@ def main(use_interface=True):
     if params.get("mode", "sweep") == "single":
         if rank == 0:
             simulation_start = time.time()
-            time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, measurement_count = run_single(params)
+            time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque = run_single(params)
             simulation_elapsed = time.time() - simulation_start
 
             minutes = int(simulation_elapsed // 60)
             seconds = simulation_elapsed % 60
             print(f"Simulation time: {minutes:02}:{seconds:05.2f}")
-            print_single_averages(MeanPotentialEnergy, MeanTorque, measurement_count)
+            print_single_averages(MeanPotentialEnergy, MeanTorque,)
 
             plot_single_potential(time_series, potential_energy)
             plot_single_torque(time_series, mean_torque)
