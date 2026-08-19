@@ -6,20 +6,22 @@ import numpy as np
 def default_parameters():
     params = {}
 
-    params["μ"] = np.array([1.0])
-    params["N"] = np.array([2 ** 9])
-    params["EndTime"] = np.array([5000.0])
+    params["N"] = np.array([2 ** 10])
+    params["EndTime"] = np.array([10000.0])
     params["BurnInTime"] = np.array([4000.0])
     params["Δt"] = np.array([0.05])
 
-    params["kT"] = np.array([0.001])
-    params["γ̇"] = np.array([0.00585938])
-    params["stride"] = np.array([1])
-    params["potential_window"] = np.array([100.0])
+    params["kT"] = np.array([0.5, 1.0])
+    params["γ̇"] = np.logspace(-3, np.log10(3.0), 36)
+    params["μ"] = np.array([3.0])
+
+    params["stride"] = np.array([10])
+    params["potential_window"] = np.array([0.0])
 
     settings = {}
 
     settings["block_samples"] = 100
+    settings["save_spatial_correlation"] = False
     settings["save_trajectory"] = False
     settings["trajectory_stride"] = 100
     settings["output_directory"] = "results"
@@ -42,6 +44,7 @@ def get_parameters(args=None):
     parser.add_argument("--stride", type=int, nargs="+", default=params["stride"])
     parser.add_argument("--potential-window", type=float, nargs="+", default=params["potential_window"])
     parser.add_argument("--block-samples", type=int, default=settings["block_samples"])
+    parser.add_argument("--save-spatial-correlation", action=argparse.BooleanOptionalAction, default=settings["save_spatial_correlation"])
     parser.add_argument("--save-trajectory", action=argparse.BooleanOptionalAction, default=settings["save_trajectory"])
     parser.add_argument("--trajectory-stride", type=int, default=settings["trajectory_stride"])
     parser.add_argument("--output-directory", default=settings["output_directory"])
@@ -60,6 +63,7 @@ def get_parameters(args=None):
     params["potential_window"] = np.array(options.potential_window)
 
     settings["block_samples"] = options.block_samples
+    settings["save_spatial_correlation"] = options.save_spatial_correlation
     settings["save_trajectory"] = options.save_trajectory
     settings["trajectory_stride"] = options.trajectory_stride
     settings["output_directory"] = options.output_directory

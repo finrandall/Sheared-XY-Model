@@ -35,10 +35,11 @@ def run_simulation(params, settings):
     stride = params["stride"]
     potential_window = params["potential_window"]
     block_samples = settings["block_samples"]
+    save_spatial_correlation = settings["save_spatial_correlation"]
     save_trajectory = settings["save_trajectory"]
     trajectory_stride = settings["trajectory_stride"]
 
-    time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, block_start_time, block_end_time, block_sample_count, block_mean_velocity, block_mean_spatial_correlation, trajectory_time, rotor_angle_trajectory = evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, stride, potential_window, block_samples, save_trajectory, trajectory_stride)
+    time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, block_start_time, block_end_time, block_sample_count, block_mean_velocity, block_mean_spatial_correlation, trajectory_time, rotor_angle_trajectory = evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, stride, potential_window, block_samples, save_spatial_correlation, save_trajectory, trajectory_stride)
 
     return {
         "parameters": params,
@@ -61,24 +62,14 @@ def run_simulation(params, settings):
     }
 
 
-def print_averages(result, number, total):
-    print(f"Simulation {number}/{total}")
-
-    for name, value in result["parameters"].items():
-        print(f"{name}: {value}")
-
-    print(f"Average potential energy: {result['MeanPotentialEnergy']:.12g}")
-    print(f"Average torque:           {result['MeanTorque']:.12g}")
-    print()
-
-
 def plot_result(result):
     plot_single_potential(result["time_series"], result["potential_energy"])
     plot_single_torque(result["time_series"], result["mean_torque"])
     plot_final_velocity(result["final_velocity"])
     plot_average_velocity(result["average_velocity"])
     plot_local_potential_history(result["local_potential_history"])
-    plot_rotor_autocorrelation(result["rotor_autocorrelation"])
+    if result["rotor_autocorrelation"].shape[0] > 0:
+        plot_rotor_autocorrelation(result["rotor_autocorrelation"])
 
 
 def save_results(results, settings):
@@ -119,6 +110,7 @@ def save_results(results, settings):
             trajectory_time=result["trajectory_time"],
             rotor_angle_trajectory=result["rotor_angle_trajectory"],
             block_samples=settings["block_samples"],
+            save_spatial_correlation=settings["save_spatial_correlation"],
             save_trajectory=settings["save_trajectory"],
             trajectory_stride=settings["trajectory_stride"],
         )
@@ -181,9 +173,6 @@ def main(params=None, settings=None):
         print(f"Simulation time: {minutes:02}:{seconds:05.2f}")
         print(f"Completed simulations: {len(results)}")
         print()
-
-        for i, result in enumerate(results):
-            print_averages(result, i + 1, len(results))
 
         output_path = save_results(results, settings)
         print(f"Saved results to: {output_path}")

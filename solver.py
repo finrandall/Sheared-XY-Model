@@ -87,7 +87,7 @@ def evolve(kT, γ̇, μ, N, EndTime, BurnInTime, Δt):
 
 
 @njit
-def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval, potential_window, block_samples, save_trajectory, trajectory_stride):
+def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval, potential_window, block_samples, save_spatial_correlation, save_trajectory, trajectory_stride):
     Iterations = int(EndTime / Δt)
     max_samples = Iterations // sample_interval + 1
     max_blocks = (max_samples + block_samples - 1) // block_samples
@@ -169,14 +169,16 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
     potential_energy[sample] = compute_potential_energy(X, t, ω)
     mean_torque[sample] = compute_mean_torque(Forces)
 
-    compute_rotor_autocorrelation(X, rotor_autocorrelation_current)
+    if save_spatial_correlation:
+        compute_rotor_autocorrelation(X, rotor_autocorrelation_current)
 
     block_start_time[block] = t
     block_end_time[block] = t
 
     for s in range(N):
         block_velocity_sum[s] += V[s]
-        block_spatial_correlation_sum[s] += rotor_autocorrelation_current[s]
+        if save_spatial_correlation:
+            block_spatial_correlation_sum[s] += rotor_autocorrelation_current[s]
 
     block_count += 1
 
@@ -187,8 +189,9 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
         for s in range(N):
             average_velocity[s] += V[s]
 
-        for s in range(N):
-            rotor_autocorrelation[s] += rotor_autocorrelation_current[s]
+        if save_spatial_correlation:
+            for s in range(N):
+                rotor_autocorrelation[s] += rotor_autocorrelation_current[s]
 
         measurement_count += 1
 
@@ -200,9 +203,11 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
 
         for s in range(N):
             block_mean_velocity[block, s] = block_velocity_sum[s] / block_count
-            block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
+            if save_spatial_correlation:
+                block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
             block_velocity_sum[s] = 0.0
-            block_spatial_correlation_sum[s] = 0.0
+            if save_spatial_correlation:
+                block_spatial_correlation_sum[s] = 0.0
 
         block += 1
         block_count = 0
@@ -253,7 +258,8 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
             potential_energy[sample] = compute_potential_energy(X, t, ω)
             mean_torque[sample] = compute_mean_torque(NewForces)
 
-            compute_rotor_autocorrelation(X, rotor_autocorrelation_current)
+            if save_spatial_correlation:
+                compute_rotor_autocorrelation(X, rotor_autocorrelation_current)
 
             if block_count == 0:
                 block_start_time[block] = t
@@ -262,7 +268,8 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
 
             for s in range(N):
                 block_velocity_sum[s] += V[s]
-                block_spatial_correlation_sum[s] += rotor_autocorrelation_current[s]
+                if save_spatial_correlation:
+                    block_spatial_correlation_sum[s] += rotor_autocorrelation_current[s]
 
             block_count += 1
 
@@ -273,8 +280,9 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
                 for s in range(N):
                     average_velocity[s] += V[s]
 
-                for s in range(N):
-                    rotor_autocorrelation[s] += rotor_autocorrelation_current[s]
+                if save_spatial_correlation:
+                    for s in range(N):
+                        rotor_autocorrelation[s] += rotor_autocorrelation_current[s]
 
                 measurement_count += 1
 
@@ -286,9 +294,11 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
 
                 for s in range(N):
                     block_mean_velocity[block, s] = block_velocity_sum[s] / block_count
-                    block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
+                    if save_spatial_correlation:
+                        block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
                     block_velocity_sum[s] = 0.0
-                    block_spatial_correlation_sum[s] = 0.0
+                    if save_spatial_correlation:
+                        block_spatial_correlation_sum[s] = 0.0
 
                 block += 1
                 block_count = 0
@@ -311,15 +321,27 @@ def evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, sample_interval
 
         for s in range(N):
             average_velocity[s] = average_velocity[s] / measurement_count
-            rotor_autocorrelation[s] = rotor_autocorrelation[s] / measurement_count
+            if save_spatial_correlation:
+                rotor_autocorrelation[s] = rotor_autocorrelation[s] / measurement_count
 
     if block_count > 0:
         block_sample_count[block] = block_count
 
         for s in range(N):
             block_mean_velocity[block, s] = block_velocity_sum[s] / block_count
-            block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
+            if save_spatial_correlation:
+                block_mean_spatial_correlation[block, s] = block_spatial_correlation_sum[s] / block_count
 
         block += 1
 
-    return time[:sample], potential_energy[:sample], mean_torque[:sample], V, average_velocity, local_potential_history[:potential_sample], rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, block_start_time[:block], block_end_time[:block], block_sample_count[:block], block_mean_velocity[:block], block_mean_spatial_correlation[:block], trajectory_time[:trajectory_sample], rotor_angle_trajectory[:trajectory_sample]
+    correlation_samples = 0
+
+    if save_spatial_correlation:
+        correlation_samples = N
+
+    correlation_blocks = 0
+
+    if save_spatial_correlation:
+        correlation_blocks = block
+
+    return time[:sample], potential_energy[:sample], mean_torque[:sample], V, average_velocity, local_potential_history[:potential_sample], rotor_autocorrelation[:correlation_samples], MeanPotentialEnergy, MeanTorque, block_start_time[:block], block_end_time[:block], block_sample_count[:block], block_mean_velocity[:block], block_mean_spatial_correlation[:correlation_blocks], trajectory_time[:trajectory_sample], rotor_angle_trajectory[:trajectory_sample]
