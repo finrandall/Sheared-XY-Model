@@ -13,6 +13,7 @@ parameter_names = (
     "temperature",
     "shear_rate",
     "damping",
+    "coupling",
     "system_size",
     "end_time",
     "time_step",
@@ -25,6 +26,7 @@ parameter_labels = {
     "temperature": r"$kT$",
     "shear_rate": r"$\dot{\gamma}$",
     "damping": r"$\mu$",
+    "coupling": r"$a$",
     "system_size": r"$N$",
     "end_time": r"$t_{\mathrm{end}}$",
     "time_step": r"$\Delta t$",
@@ -65,7 +67,7 @@ def load_averages(results_directory, burn_in_time):
             row = {"file": index_row["file"]}
 
             for name in parameter_names:
-                row[name] = float(index_row[name])
+                row[name] = float(index_row.get(name, 1.0 if name == "coupling" else "nan"))
 
             row["burn_in_time"] = burn_in_time
             row["samples_after_burn_in"] = int(np.count_nonzero(measured))
@@ -159,7 +161,8 @@ def plot_averages(rows, x_parameter, results_directory, log_x=False, save_prefix
 
                 temperature = group[0]["temperature"]
                 damping = group[0]["damping"]
-                analytic_values = np.array([analytic_torque(value, temperature, damping, xmax=analytic_xmax) for value in analytic_shear_rate])
+                coupling = group[0]["coupling"]
+                analytic_values = np.array([analytic_torque(value, temperature, damping, a=coupling, xmax=analytic_xmax) for value in analytic_shear_rate])
                 ax.plot(analytic_shear_rate, analytic_values, linewidth=1, alpha=0.7, color=line.get_color())
 
         ax.set_xlabel(parameter_labels[x_parameter])

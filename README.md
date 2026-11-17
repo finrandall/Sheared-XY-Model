@@ -1,6 +1,20 @@
 # Parallel shear XY model
 
-Add description.
+Simulates the 1D classical XY model under steady shear with conserved angular momentum
+(Evans et al., PRL 114, 138301). Each bond carries a torque
+`tau_i = a sin(phi_i) + mu dphi_i/dt + eta_i`, with `phi_i = theta_{i+1} - theta_i` and
+`<eta_i(t) eta_j(t')> = 2 mu kT delta_ij delta(t - t')`; rotor `i` feels `tau_i - tau_{i-1}`
+(moment of inertia 1). The last bond couples rotor `N-1` to the image of rotor 0, rotated by
+`omega t` with `omega = N * shear_rate`.
+
+Integration uses the Groot-Warren modified velocity-Verlet scheme (lambda = 1/2) with one force
+evaluation per step; see the docstring in `solver.py`.
+
+`--coupling` sets `a`; `--coupling 0` switches the potential off (the reference system).
+
+The stored `mean_torque` is `mu * shear_rate + a <sin phi>`, the bond-averaged torque without
+its zero-mean noise term. It has the same expectation as the full torque but much smaller
+sampling noise.
 
 ## PyCharm
 

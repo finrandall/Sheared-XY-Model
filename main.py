@@ -28,6 +28,7 @@ def run_simulation(params, settings):
     kT = params["kT"]
     γ̇ = params["γ̇"]
     μ = params["μ"]
+    a = params["a"]
     N = params["N"]
     EndTime = params["EndTime"]
     BurnInTime = params["BurnInTime"]
@@ -39,7 +40,7 @@ def run_simulation(params, settings):
     save_trajectory = settings["save_trajectory"]
     trajectory_stride = settings["trajectory_stride"]
 
-    time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, block_start_time, block_end_time, block_sample_count, block_mean_velocity, block_mean_spatial_correlation, trajectory_time, rotor_angle_trajectory = evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, stride, potential_window, block_samples, save_spatial_correlation, save_trajectory, trajectory_stride)
+    time_series, potential_energy, mean_torque, final_velocity, average_velocity, local_potential_history, rotor_autocorrelation, MeanPotentialEnergy, MeanTorque, block_start_time, block_end_time, block_sample_count, block_mean_velocity, block_mean_spatial_correlation, trajectory_time, rotor_angle_trajectory = evolve_timeseries(kT, γ̇, μ, N, EndTime, BurnInTime, Δt, stride, potential_window, block_samples, save_spatial_correlation, save_trajectory, trajectory_stride, a)
 
     return {
         "parameters": params,
@@ -87,6 +88,7 @@ def save_results(results, settings):
             kT=parameter_values["kT"],
             shear_rate=parameter_values["γ̇"],
             damping=parameter_values["μ"],
+            coupling=parameter_values["a"],
             system_size=parameter_values["N"],
             end_time=parameter_values["EndTime"],
             burn_in_time=parameter_values["BurnInTime"],
@@ -120,6 +122,7 @@ def save_results(results, settings):
             "temperature": parameter_values["kT"],
             "shear_rate": parameter_values["γ̇"],
             "damping": parameter_values["μ"],
+            "coupling": parameter_values["a"],
             "system_size": parameter_values["N"],
             "end_time": parameter_values["EndTime"],
             "burn_in_time": parameter_values["BurnInTime"],

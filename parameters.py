@@ -14,6 +14,7 @@ def default_parameters():
     params["kT"] = np.array([0.5, 1.0])
     params["γ̇"] = np.logspace(-3, np.log10(3.0), 36)
     params["μ"] = np.array([3.0])
+    params["a"] = np.array([1.0])
 
     params["stride"] = np.array([10])
     params["potential_window"] = np.array([0.0])
@@ -34,6 +35,7 @@ def get_parameters(args=None):
 
     parser = argparse.ArgumentParser(description="Simulate the sheared XY model.")
     parser.add_argument("--damping", type=float, nargs="+", default=params["μ"])
+    parser.add_argument("--coupling", type=float, nargs="+", default=params["a"], help="Coupling constant a; 0 switches the potential off.")
     parser.add_argument("--system-size", type=int, nargs="+", default=params["N"])
     parser.add_argument("--end-time", type=float, nargs="+", default=params["EndTime"])
     parser.add_argument("--burn-in-time", type=float, nargs="+", default=params["BurnInTime"])
@@ -52,6 +54,7 @@ def get_parameters(args=None):
     options = parser.parse_args(args)
 
     params["μ"] = np.array(options.damping)
+    params["a"] = np.array(options.coupling)
     params["N"] = np.array(options.system_size)
     params["EndTime"] = np.array(options.end_time)
     params["BurnInTime"] = np.array(options.burn_in_time)
